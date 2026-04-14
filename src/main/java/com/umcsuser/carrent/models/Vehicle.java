@@ -1,4 +1,4 @@
-package org.example;
+package com.umcsuser.carrent;
 public abstract class Vehicle {
     private String id;
     private String brand;

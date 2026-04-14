@@ -1,4 +1,4 @@
-package org.example;
+package com.umcsuser.carrent;
 
 public class User {
     private String login;

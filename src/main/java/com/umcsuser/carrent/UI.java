@@ -1,6 +1,5 @@
-package org.example;
+package com.umcsuser;
 
-import java.util.List;
 import java.util.Scanner;
 
 public class UI {
