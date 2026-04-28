@@ -1,4 +1,4 @@
-package com.umcsuser.carrent;
+package com.umcsuser.carrent.models;
 import lombok.*;
 
 @Getter

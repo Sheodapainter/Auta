@@ -1,28 +1,35 @@
-package com.umcsuser;
+package com.umcsuser.carrent.services;
 
-import org.apache.commons.codec.digest.DigestUtils;
+import com.umcsuser.carrent.models.Role;
+import com.umcsuser.carrent.models.User;
+import com.umcsuser.carrent.repositories.UserRepository;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.Objects;
+import java.util.Optional;
 
-public class Authentication {
-    private IUserRepository repo;
-    public static String hashPassword(String password) {
-        return DigestUtils.sha256Hex(password);
-    }
-    public User authenticate(String username, String password) {
-        for(User u: repo.getUsers()){
+public class AuthService {
+    private UserRepository repo;
+    public Boolean register(String username, String password) {
+        for(User u: repo.findAll()){
             if(Objects.equals(u.getLogin(), username)) {
-                if(Objects.equals(u.getPassword(), hashPassword(password))) {
-                    return u;
+                return false;
+            }
+        }
+        repo.save(new User(null, username, BCrypt.hashpw(password, BCrypt.gensalt()), Role.USER));
+        return true;
+    }
+    public Optional<User> login(String username, String password) {
+        for(User u: repo.findAll()){
+            if(Objects.equals(u.getLogin(), username)) {
+                if(BCrypt.checkpw(password, u.getPasswordHash())) {
+                    return Optional.of(u);
                 }
             }
         }
-        return null;
+        return Optional.empty();
     }
-    public Authentication(IUserRepository r) {
+    public AuthService(UserRepository r) {
         this.repo=r;
-    }
-    public IUserRepository getRepo() {
-        return repo;
     }
 }
