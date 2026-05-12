@@ -1,0 +1,21 @@
+[
+  {
+    "category": "Car",
+    "attributes": {
+      "fuelType": "string"
+    }
+  },
+  {
+    "category": "Motorcycle",
+    "attributes": {
+      "licence": "string",
+      "fuelType": "string"
+    }
+  },
+  {
+    "category": "Bus",
+    "attributes": {
+      "seats": "number"
+    }
+  }
+]

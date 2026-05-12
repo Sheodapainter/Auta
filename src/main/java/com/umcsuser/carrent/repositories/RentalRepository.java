@@ -1,4 +1,4 @@
-package com.umcsuser.carrent;
+package com.umcsuser.carrent.repositories;
 
 import com.umcsuser.carrent.models.Rental;
 

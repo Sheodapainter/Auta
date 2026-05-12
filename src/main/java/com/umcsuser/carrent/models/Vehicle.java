@@ -1,61 +1,63 @@
-package com.umcsuser.carrent;
-public abstract class Vehicle {
+package com.umcsuser.carrent.models;
+
+import lombok.*;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@Builder
+@EqualsAndHashCode(of = "id")
+@ToString
+public class Vehicle {
     private String id;
+    private String category;
     private String brand;
     private String model;
-    private Integer year;
+    private int year;
+    private String plate;
     private Double price;
-    private Boolean rented;
-    public String toCSV() {
-        return id+";"+brand+";"+model+";"+year+";"+price+";"+rented;
-    }
-    public String getId() {
-        return this.id;
-    }
-    public String getBrand() {
-        return this.brand;
-    }
-    public String getModel() {
-        return this.model;
-    }
-    public Integer getYear() {
-        return this.year;
-    }
-    public Double getPrice() {
-        return this.price;
-    }
-    public void setRented(Boolean rented) {
-        this.rented = rented;
-    }
-    public Boolean isRented() {
-        return this.rented;
-    }
-    @Override
-    public String toString() {
-        return "Vehicle{" +
-                "id='" + id + '\'' +
-                ", brand='" + brand + '\'' +
-                ", model='" + model + '\'' +
-                ", year=" + year +
-                ", price=" + price +
-                ", rented=" + rented +
-                '}';
-    }
 
-    public Vehicle(Boolean rented, Double price, Integer year, String model, String brand, String id) {
-        this.rented = rented;
-        this.price = price;
-        this.year = year;
-        this.model = model;
-        this.brand = brand;
-        this.id = id;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private Map<String, Object> attributes = new HashMap<>();
+
+    @Builder
+    public Vehicle(String id, String category, String brand, String model, int year, String plate, Double price, Map<String, Object> attributes) {
+        this.id=id;
+        this.category=category;
+        this.brand=brand;
+        this.model=model;
+        this.year=year;
+        this.plate=plate;
+        this.price=price;
+        this.attributes=attributes==null?new HashMap<>() : new HashMap<>(attributes);
     }
-    public Vehicle(Vehicle other) {
-        this.rented = other.isRented();
-        this.price = other.getPrice();
-        this.year = other.getYear();
-        this.model = other.getModel();
-        this.brand = other.getBrand();
-        this.id = other.getId();
+    public Map<String, Object> getAttributes() {
+        return Collections.unmodifiableMap(attributes);
+    }
+    public Object getAttribute(String key) {
+        return attributes.get(key);
+    }
+    public void addAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
+    public void removeAttribute(String key) {
+        attributes.remove(key);
+    }
+    public Vehicle copy() {
+        return Vehicle.builder()
+                .id(id)
+                .category(category)
+                .brand(brand)
+                .model(model)
+                .year(year)
+                .plate(plate)
+                .price(price)
+                .attributes(new HashMap<>(attributes))
+                .build();
     }
 }
