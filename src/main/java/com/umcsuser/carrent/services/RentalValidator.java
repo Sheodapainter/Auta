@@ -26,7 +26,6 @@ public class RentalValidator {
         requireNonBlank(rental.getVehicleId(), "id pojazdu jest wymagane");
         requireNonBlank(rental.getUserId(), "id uzytkownika jest wymagane");
         dateFormatCheck(rental.getRentDateTime());
-        dateFormatCheck(rental.getReturnDateTime());
     }
 
     public void validateRental(Rental rental) {
