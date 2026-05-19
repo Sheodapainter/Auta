@@ -39,11 +39,19 @@ public class VehicleJdbcRepository implements VehicleRepository {
 
     @Override
     public Optional<Vehicle> findById(String id) {
-        String sql = "SELECT id, category, brand, model, year, plate, price, attributes FROM vehicle WHERE id LIKE "+id;
+        if (id==null) {
+            return Optional.empty();
+        }
+        String sql = "SELECT id, category, brand, model, year, plate, price, attributes FROM vehicle WHERE id LIKE ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             stmt.setString(1, id);
+             ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading vehicles", e);
         }
@@ -60,7 +68,6 @@ public class VehicleJdbcRepository implements VehicleRepository {
             toSave.setId(UUID.randomUUID().toString());
             edit=false;
         } else {
-            deleteById(vehicle.getId());
             edit=true;
         }
         if(edit) {
@@ -92,20 +99,20 @@ public class VehicleJdbcRepository implements VehicleRepository {
             String sql = "INSERT INTO vehicle (id, category, brand, model, year, plate, price, attributes) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb)";
             try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
                  PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, vehicle.getId());
-                stmt.setString(2, vehicle.getCategory());
-                stmt.setString(3, vehicle.getBrand());
-                stmt.setString(4, vehicle.getModel());
-                stmt.setInt(5, vehicle.getYear());
-                stmt.setString(6, vehicle.getPlate());
-                stmt.setDouble(7, vehicle.getPrice());
-                stmt.setString(8, gson.toJson(vehicle.getAttributes()));
+                stmt.setString(1, toSave.getId());
+                stmt.setString(2, toSave.getCategory());
+                stmt.setString(3, toSave.getBrand());
+                stmt.setString(4, toSave.getModel());
+                stmt.setInt(5, toSave.getYear());
+                stmt.setString(6, toSave.getPlate());
+                stmt.setDouble(7, toSave.getPrice());
+                stmt.setString(8, gson.toJson(toSave.getAttributes()));
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException("Error occurred while saving vehicle", e);
             }
         }
-        return vehicle;
+        return toSave;
     }
 
     @Override

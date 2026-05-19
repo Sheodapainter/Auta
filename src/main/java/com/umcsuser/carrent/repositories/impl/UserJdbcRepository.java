@@ -33,11 +33,16 @@ public class UserJdbcRepository implements UserRepository {
 
     @Override
     public Optional<User> findById(String id) {
-        String sql = "SELECT id, login, password_hash, role FROM users WHERE id LIKE "+id;
+        String sql = "SELECT id, login, password_hash, role FROM users WHERE id LIKE ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+             ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading users", e);
         }
@@ -50,8 +55,11 @@ public class UserJdbcRepository implements UserRepository {
              PreparedStatement stmt = connection.prepareStatement(sql)) {
              stmt.setString(1, login);
              ResultSet rs = stmt.executeQuery();
-             rs.next();
-            return Optional.ofNullable(mapRow(rs));
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading users", e);
         }
@@ -101,7 +109,7 @@ public class UserJdbcRepository implements UserRepository {
                 throw new RuntimeException("Error occurred while saving user", e);
             }
         }
-        return user;
+        return toSave;
     }
 
     @Override

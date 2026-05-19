@@ -34,11 +34,16 @@ public class RentalJdbcRepository implements RentalRepository {
 
     @Override
     public Optional<Rental> findById(String id) {
-        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE id LIKE "+id;
+        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE id LIKE ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+             ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading rentals", e);
         }
@@ -91,7 +96,7 @@ public class RentalJdbcRepository implements RentalRepository {
                 throw new RuntimeException("Error occurred while saving rental", e);
             }
         }
-        return rental;
+        return toSave;
     }
 
     @Override
@@ -108,7 +113,7 @@ public class RentalJdbcRepository implements RentalRepository {
 
     @Override
     public Optional<Rental> findByVehicleIdAndReturnDateIsNull(String vehicleId) {
-        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE vehicle_id LIKE ?";
+        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE vehicle_id LIKE ? AND return_date IS NULL";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
              PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setString(1, vehicleId);

@@ -185,7 +185,7 @@ public class UI {
                 if(v.isEmpty()) {
                     System.out.println("Nie posiada wypożyczonego pojazdu.");
                 } else {
-                    System.out.println(v);
+                    System.out.println(v.get());
                 }
             }
             return true;
@@ -207,10 +207,11 @@ public class UI {
                     }
                 }
             }
-            if(vid==null) {
+            Optional<Vehicle> userVehicle = vehicleService.findById(vid);
+            if(userVehicle.isEmpty()) {
                 System.out.println("Nie posiada wypożyczonego pojazdu.");
             } else {
-                System.out.println(vehicleService.findById(vid));
+                System.out.println(userVehicle.get());
             }
             return true;
         } else {
@@ -261,9 +262,8 @@ public class UI {
                     };
                     vehicle.addAttribute(attrName, value);
                 });
-                Vehicle added = vehicleService.addVehicle(vehicle);
+                vehicleService.addVehicle(vehicle);
                 System.out.println("Pojazd pomyslnie dodany:");
-                System.out.println(vehicleService.findById(added.getId()));
                 return true;
             } catch (NumberFormatException e) {
                 e.printStackTrace();
@@ -341,12 +341,15 @@ public class UI {
                 System.out.println("Zalogowano jako "+currentUser().getLogin()+", użytkownik.");
                 System.out.println("Dostępne komendy:");
                 System.out.println("\"show\" aby pokazać listę dostępnych pojazdów");
+                System.out.println("\"showSelf\" aby wyswietlic aktualnie wypozyczony pojazd");
                 System.out.println("\"rent\" aby wynająć pojazd");
                 System.out.println("\"return\" aby zwrócić pojazd");
                 System.out.println("\"logout\" aby się wylogować");
                 command = scanner.nextLine();
                 if(command.equalsIgnoreCase("show")) {
                     showAll();
+                } else if(command.equalsIgnoreCase("showself")) {
+                    showSelf();
                 } else if(command.equalsIgnoreCase("rent")) {
                     rentCar();
                 } else if(command.equalsIgnoreCase("return")) {
