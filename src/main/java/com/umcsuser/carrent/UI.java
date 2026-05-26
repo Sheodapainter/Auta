@@ -209,6 +209,7 @@ public class UI {
                 System.out.println("\nPodaj cene pojazdu:");
                 cena = Double.parseDouble(scanner.nextLine());
                 Vehicle vehicle = Vehicle.builder()
+                        .id(UUID.randomUUID().toString())
                         .category(config.getCategory())
                         .brand(marka)
                         .model(model)
