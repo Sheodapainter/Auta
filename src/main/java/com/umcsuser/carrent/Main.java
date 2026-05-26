@@ -13,11 +13,22 @@ public class Main {
             VehicleCategoryConfigRepository configRepository = new VehicleCategoryConfigJsonRepository();
             VehicleCategoryConfigService configService = new VehicleCategoryConfigService(configRepository);
             VehicleValidator vehicleValidator = new VehicleValidator(configService);
-            RentalValidator rentalValidator = new RentalValidator();
-            RentalService rentalService = new RentalService(rentalRepository, rentalValidator);
-            VehicleService vehicleService = new VehicleService(vehicleValidator, vehicleRepository, rentalService);
-            UserValidator userValidator = new UserValidator();
-            UserService userService = new UserService(userRepository, userValidator, rentalService);
+            RentalService rentalService = new RentalService(rentalRepository, userRepository, vehicleRepository);
+            VehicleService vehicleService = new VehicleService(vehicleValidator, vehicleRepository, rentalRepository);
+            UserService userService = new UserService(userRepository, rentalRepository);
+            UI ui = new UI(userService, rentalService, authService, configService, vehicleService);
+            ui.start();
+        } else if(args.length > 0 && args[0].equals("hibernate")) {
+            UserHibernateRepository userRepository = new UserHibernateRepository();
+            VehicleHibernateRepository vehicleRepository = new VehicleHibernateRepository();
+            RentalHibernateRepository rentalRepository = new RentalHibernateRepository();
+            AuthHibernateService authService = new AuthHibernateService(userRepository);
+            VehicleCategoryConfigRepository configRepository = new VehicleCategoryConfigJsonRepository();
+            VehicleCategoryConfigService configService = new VehicleCategoryConfigService(configRepository);
+            VehicleValidator vehicleValidator = new VehicleValidator(configService);
+            RentalHibernateService rentalService = new RentalHibernateService(rentalRepository, vehicleRepository, userRepository);
+            VehicleHibernateService vehicleService = new VehicleHibernateService(vehicleValidator, vehicleRepository, rentalRepository);
+            UserHibernateService userService = new UserHibernateService(userRepository, rentalRepository);
             UI ui = new UI(userService, rentalService, authService, configService, vehicleService);
             ui.start();
         } else {
@@ -28,14 +39,11 @@ public class Main {
             VehicleCategoryConfigRepository configRepository = new VehicleCategoryConfigJsonRepository();
             VehicleCategoryConfigService configService = new VehicleCategoryConfigService(configRepository);
             VehicleValidator vehicleValidator = new VehicleValidator(configService);
-            RentalValidator rentalValidator = new RentalValidator();
-            RentalService rentalService = new RentalService(rentalRepository, rentalValidator);
-            VehicleService vehicleService = new VehicleService(vehicleValidator, vehicleRepository, rentalService);
-            UserValidator userValidator = new UserValidator();
-            UserService userService = new UserService(userRepository, userValidator, rentalService);
+            RentalService rentalService = new RentalService(rentalRepository, userRepository, vehicleRepository);
+            VehicleService vehicleService = new VehicleService(vehicleValidator, vehicleRepository, rentalRepository);
+            UserService userService = new UserService(userRepository, rentalRepository);
             UI ui = new UI(userService, rentalService, authService, configService, vehicleService);
             ui.start();
-
         }
     }
 }

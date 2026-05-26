@@ -34,11 +34,16 @@ public class RentalJdbcRepository implements RentalRepository {
 
     @Override
     public Optional<Rental> findById(String id) {
-        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE id LIKE "+id;
+        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE id LIKE ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+             ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading rentals", e);
         }
@@ -81,17 +86,17 @@ public class RentalJdbcRepository implements RentalRepository {
             String sql = "INSERT INTO rental (id, user_id, vehicle_id, rent_date, return_date) VALUES (?, ?, ?, ?, ?)";
             try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
                  PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, rental.getId());
-                stmt.setString(2, rental.getUserId());
-                stmt.setString(3, rental.getVehicleId());
-                stmt.setString(4, rental.getRentDateTime());
-                stmt.setString(5, rental.getReturnDateTime());
+                stmt.setString(1, toSave.getId());
+                stmt.setString(2, toSave.getUserId());
+                stmt.setString(3, toSave.getVehicleId());
+                stmt.setString(4, toSave.getRentDateTime());
+                stmt.setString(5, toSave.getReturnDateTime());
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException("Error occurred while saving rental", e);
             }
         }
-        return rental;
+        return toSave;
     }
 
     @Override
@@ -108,22 +113,27 @@ public class RentalJdbcRepository implements RentalRepository {
 
     @Override
     public Optional<Rental> findByVehicleIdAndReturnDateIsNull(String vehicleId) {
-        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE vehicle_id LIKE "+vehicleId;
+        String sql = "SELECT id, user_id, vehicle_id, rent_date, return_date FROM rental WHERE vehicle_id LIKE ? AND return_date IS NULL";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+                stmt.setString(1, vehicleId);
+                ResultSet rs = stmt.executeQuery();
+                if(rs.next()) {
+                    return Optional.ofNullable(mapRow(rs));
+                } else {
+                    return Optional.empty();
+                }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading rentals", e);
         }
     }
     private Rental mapRow(ResultSet rs) throws SQLException {
         return Rental.builder()
-                .id(rs.getString("id"))
-                .userId(rs.getString("user_id"))
-                .vehicleId(rs.getString("vehicle_id"))
-                .rentDateTime(rs.getString("rent_date"))
-                .returnDateTime(rs.getString("return_date"))
+                //.id(rs.getString("id"))
+                //.userId(rs.getString("user_id"))
+                //.vehicleId(rs.getString("vehicle_id"))
+                //.rentDateTime(rs.getString("rent_date"))
+                //.returnDateTime(rs.getString("return_date"))
                 .build();
     }
 }

@@ -3,8 +3,6 @@ package com.umcsuser.carrent;
 import com.umcsuser.carrent.models.*;
 import com.umcsuser.carrent.services.*;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.umcsuser.carrent.models.Role.ADMIN;
@@ -13,15 +11,15 @@ import static com.umcsuser.carrent.models.Role.USER;
 public class UI {
     private User loggedIn = null;
     private final VehicleCategoryConfigService configService;
-    private final VehicleService vehicleService;
-    private final UserService userService;
-    private final RentalService rentalService;
-    private final AuthService authService;
+    private final VehicleServiceInterface vehicleService;
+    private final UserServiceInterface userService;
+    private final RentalServiceInterface rentalService;
+    private final AuthServiceInterface authService;
     private final Scanner scanner = new Scanner(System.in);
     public User currentUser() {
         return loggedIn;
     }
-    public UI(UserService userService, RentalService rentalService, AuthService authService, VehicleCategoryConfigService configService, VehicleService vehicleService) {
+    public UI(UserServiceInterface userService, RentalServiceInterface rentalService, AuthServiceInterface authService, VehicleCategoryConfigService configService, VehicleServiceInterface vehicleService) {
         this.authService = authService;
         this.userService = userService;
         this.rentalService = rentalService;
@@ -38,7 +36,7 @@ public class UI {
             System.out.println("Niepoprawne dane logowania");
             return false;
         } else {
-            loggedIn = userService.findByLogin(log);
+            loggedIn = cur.get();
             System.out.println("Zalogowano "+log);
             return true;
         }
@@ -75,11 +73,18 @@ public class UI {
         if(loggedIn.getRole()==Role.ADMIN) {
             System.out.println("Podaj nazwę użytkownika: ");
             String username = scanner.nextLine();
-            User u = userService.findByLogin(username);
+            String uid = null;
+            List<User> users = userService.findAll();
+            for(User u: users) {
+                if(Objects.equals(u.getLogin(), username)) {
+                    uid=u.getId();
+                    break;
+                }
+            }
             try {
-                userService.deleteById(u.getId());
-            } catch (IllegalArgumentException e) {
-                System.err.println(e);
+                userService.deleteUser(uid, loggedIn.getId());
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
             }
             return true;
         }
@@ -90,7 +95,7 @@ public class UI {
     }
     public boolean rentCar() {
         if(loggedIn.getRole()==Role.USER) {
-            List<Rental> rentals = rentalService.findAll();
+            List<Rental> rentals = rentalService.findAllRentals();
             for(Rental r: rentals) {
                 if(Objects.equals(r.getUserId(), loggedIn.getId())) {
                     if(r.getReturnDateTime()==null) {
@@ -101,16 +106,13 @@ public class UI {
             }
             System.out.println("Podaj id pojazdu");
             String id = scanner.nextLine();
-            if(rentalService.findByVehicleIdAndReturnDateIsNull(id).isPresent()) {
+            if(rentalService.vehicleHasActiveRental(id)) {
                 System.out.println("Pojazd jest juz wypozyczony");
                 return false;
             }
             for(Vehicle v: vehicleService.findAllVehicles()) {
                 if (Objects.equals(v.getId(), id)) {
-                    LocalDateTime now = LocalDateTime.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS");
-                    Rental rental = new Rental(null, id, loggedIn.getId(), now.format(formatter), null);
-                    rentalService.save(rental);
+                    rentalService.rentVehicle(loggedIn.getId(), id);
                     System.out.println("Wypożyczenie udane.");
                     return true;
                 }
@@ -124,19 +126,12 @@ public class UI {
     }
     public boolean returnCar() {
         if(loggedIn.getRole()==Role.USER) {
-            List<Rental> rentals = rentalService.findAll();
-            for(Rental r: rentals) {
-                if(Objects.equals(r.getUserId(), loggedIn.getId())) {
-                    if(r.getReturnDateTime()==null) {
-                        System.out.println("Znaleziono wypozyczony pojazd. Zwracanie...");
-                        LocalDateTime now = LocalDateTime.now();
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS");
-                        Rental rental = new Rental(r.getId(), r.getVehicleId(), r.getUserId(), r.getRentDateTime(), now.format(formatter));
-                        rentalService.save(rental);
-                        System.out.println("Zwrot pomyślny.");
-                        return true;
-                    }
-                }
+            Optional<Rental> rental = rentalService.findActiveRentalByUserId(loggedIn.getId());
+            if(rental.isPresent()) {
+                System.out.println("Znaleziono wypozyczony pojazd. Zwracanie...");
+                rentalService.returnVehicle(loggedIn.getId());
+                System.out.println("Zwrot pomyślny.");
+                return true;
             }
             System.out.println("Użytkownik nie posiada wypożyczonego pojazdu");
             return false;
@@ -152,17 +147,8 @@ public class UI {
             }
             return true;
         } else {
-            List<Rental> rentals = rentalService.findAll();
-            List<String> ids = new ArrayList<>();
-            for(Rental r: rentals) {
-                if(r.getReturnDateTime()==null) {
-                    ids.add(r.getVehicleId());
-                }
-            }
-            for(Vehicle v: vehicleService.findAllVehicles()) {
-                if(!ids.contains(v.getId())) {
-                    System.out.println(v);
-                }
+            for(Vehicle v: vehicleService.findAvailableVehicles()) {
+                System.out.println(v);
             }
             return true;
         }
@@ -170,22 +156,13 @@ public class UI {
     public boolean showUsers() {
         if(loggedIn.getRole()==Role.ADMIN) {
             List<User> users = userService.findAll();
-            List<Rental> rentals = rentalService.findAll();
             for(User u: users) {
-                Optional<Vehicle> v=Optional.empty();
-                for(Rental r: rentals) {
-                    if(Objects.equals(u.getId(), r.getUserId())) {
-                        if(r.getReturnDateTime()==null) {
-                            v = vehicleService.findById(r.getVehicleId());
-                            break;
-                        }
-                    }
-                }
+                Optional<Rental> r=rentalService.findActiveRentalByUserId(u.getId());
                 System.out.println("Użytkownik: "+u.getLogin());
-                if(v.isEmpty()) {
+                if(r.isEmpty()) {
                     System.out.println("Nie posiada wypożyczonego pojazdu.");
                 } else {
-                    System.out.println(v);
+                    System.out.println(r.get().getVehicle());
                 }
             }
             return true;
@@ -197,20 +174,11 @@ public class UI {
     public boolean showSelf() {
         if(loggedIn.getRole()==Role.USER) {
             System.out.println("Użytkownik "+loggedIn.getLogin());
-            String vid=null;
-            List<Rental> rentals = rentalService.findAll();
-            for(Rental r: rentals) {
-                if(Objects.equals(r.getUserId(), loggedIn.getId())) {
-                    if(r.getReturnDateTime()==null) {
-                        vid = r.getVehicleId();
-                        break;
-                    }
-                }
-            }
-            if(vid==null) {
+            Optional<Rental> userRental = rentalService.findActiveRentalByUserId(loggedIn.getId());
+            if(userRental.isEmpty()) {
                 System.out.println("Nie posiada wypożyczonego pojazdu.");
             } else {
-                System.out.println(vehicleService.findById(vid));
+                System.out.println(userRental.get().getVehicle());
             }
             return true;
         } else {
@@ -261,9 +229,8 @@ public class UI {
                     };
                     vehicle.addAttribute(attrName, value);
                 });
-                Vehicle added = vehicleService.addVehicle(vehicle);
+                vehicleService.addVehicle(vehicle);
                 System.out.println("Pojazd pomyslnie dodany:");
-                System.out.println(vehicleService.findById(added.getId()));
                 return true;
             } catch (NumberFormatException e) {
                 e.printStackTrace();
@@ -282,8 +249,8 @@ public class UI {
             try {
                 vehicleService.removeVehicle(id);
                 System.out.println("Pojazd pomyślnie usunięty.");
-            } catch (IllegalArgumentException e) {
-                System.err.println(e);
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
             }
             return true;
         } else {
@@ -341,12 +308,15 @@ public class UI {
                 System.out.println("Zalogowano jako "+currentUser().getLogin()+", użytkownik.");
                 System.out.println("Dostępne komendy:");
                 System.out.println("\"show\" aby pokazać listę dostępnych pojazdów");
+                System.out.println("\"showSelf\" aby wyswietlic aktualnie wypozyczony pojazd");
                 System.out.println("\"rent\" aby wynająć pojazd");
                 System.out.println("\"return\" aby zwrócić pojazd");
                 System.out.println("\"logout\" aby się wylogować");
                 command = scanner.nextLine();
                 if(command.equalsIgnoreCase("show")) {
                     showAll();
+                } else if(command.equalsIgnoreCase("showself")) {
+                    showSelf();
                 } else if(command.equalsIgnoreCase("rent")) {
                     rentCar();
                 } else if(command.equalsIgnoreCase("return")) {
@@ -363,3 +333,5 @@ public class UI {
         }
     }
 }
+//1. Dodanie pojazdu nie działa
+//2. Usuwanie user/vehicle wypozyczone wywala program: Exception in thread "main" java.lang.IllegalStateException: org.hibernate.resource.jdbc.internal.LogicalConnectionManagedImpl@43ab0659 is closed

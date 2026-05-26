@@ -33,11 +33,16 @@ public class UserJdbcRepository implements UserRepository {
 
     @Override
     public Optional<User> findById(String id) {
-        String sql = "SELECT id, login, password_hash, role FROM users WHERE id LIKE "+id;
+        String sql = "SELECT id, login, password_hash, role FROM users WHERE id LIKE ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, id);
+             ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading users", e);
         }
@@ -45,11 +50,16 @@ public class UserJdbcRepository implements UserRepository {
 
     @Override
     public Optional<User> findByLogin(String login) {
-        String sql = "SELECT id, login, password_hash, role FROM users WHERE login LIKE "+login;
+        String sql = "SELECT id, login, password_hash, role FROM users WHERE login LIKE ?";
         try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            return Optional.ofNullable(mapRow(rs));
+             PreparedStatement stmt = connection.prepareStatement(sql)) {
+             stmt.setString(1, login);
+             ResultSet rs = stmt.executeQuery();
+            if(rs.next()) {
+                return Optional.ofNullable(mapRow(rs));
+            } else {
+                return Optional.empty();
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error occurred while reading users", e);
         }
@@ -90,16 +100,16 @@ public class UserJdbcRepository implements UserRepository {
             String sql = "INSERT INTO users (id, login, password_hash, role) VALUES (?, ?, ?, ?)";
             try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
                  PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, user.getId());
-                stmt.setString(2, user.getLogin());
-                stmt.setString(3, user.getPasswordHash());
-                stmt.setString(4, String.valueOf(user.getRole()));
+                stmt.setString(1, toSave.getId());
+                stmt.setString(2, toSave.getLogin());
+                stmt.setString(3, toSave.getPasswordHash());
+                stmt.setString(4, String.valueOf(toSave.getRole()));
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException("Error occurred while saving user", e);
             }
         }
-        return user;
+        return toSave;
     }
 
     @Override

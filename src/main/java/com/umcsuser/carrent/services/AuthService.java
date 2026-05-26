@@ -8,9 +8,9 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.util.Objects;
 import java.util.Optional;
 
-public class AuthService {
+public class AuthService implements AuthServiceInterface{
     private final UserRepository repo;
-    public Boolean register(String username, String password) {
+    public boolean register(String username, String password) {
         for(User u: repo.findAll()){
             if(Objects.equals(u.getLogin(), username)) {
                 return false;
