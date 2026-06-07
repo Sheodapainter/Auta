@@ -45,6 +45,7 @@ public class RentalJsonRepository implements RentalRepository {
     }
     @Override
     public List<Rental> findAll() {
+        updateRentals();
         List<Rental> copy = new ArrayList<>();
         for(Rental rental: rentals) {
             copy.add(rental.copy());
@@ -53,6 +54,7 @@ public class RentalJsonRepository implements RentalRepository {
     }
     @Override
     public Optional<Rental> findById(String id) {
+        updateRentals();
         return rentals.stream()
                 .filter(rental -> rental.getId().equals(id))
                 .findFirst()
@@ -83,10 +85,24 @@ public class RentalJsonRepository implements RentalRepository {
     }
     @Override
     public Optional<Rental> findByVehicleIdAndReturnDateIsNull(String vehicleId) {
+        updateRentals();
         return rentals.stream()
                 .filter(rental -> rental.getVehicleId().equals(vehicleId))
                 .filter(rental -> rental.getReturnDateTime() == null)
                 .findFirst()
                 .map(Rental::copy);
+    }
+    private void updateRentals() {
+        List<RentalData> toDelete = new ArrayList<>();
+        for(RentalData rental: rawRentals) {
+            if(userRepository.findById(rental.getUserId()).isEmpty()||vehicleRepository.findById(rental.getVehicleId()).isEmpty()) {
+                toDelete.add(rental);
+            }
+        }
+        for(RentalData rental: toDelete) {
+            rentals.removeIf(r -> r.getId().equals(rental.getId()));
+            rawRentals.remove(rental);
+        }
+        storage.save(rawRentals);
     }
 }
