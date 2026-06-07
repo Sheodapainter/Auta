@@ -4,21 +4,34 @@ import com.umcsuser.carrent.models.Role;
 import com.umcsuser.carrent.models.User;
 import com.umcsuser.carrent.repositories.UserRepository;
 import com.umcsuser.carrent.services.JdbcConnectionManager;
+import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
+@Repository
+@Profile("jdbc")
 public class UserJdbcRepository implements UserRepository {
+
+    private final DataSource dataSource;
+
+    public UserJdbcRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
     @Override
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
         String sql = "SELECT id, login, password_hash, role FROM users";
 
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
@@ -34,8 +47,8 @@ public class UserJdbcRepository implements UserRepository {
     @Override
     public Optional<User> findById(String id) {
         String sql = "SELECT id, login, password_hash, role FROM users WHERE id LIKE ?";
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, id);
              ResultSet rs = stmt.executeQuery();
             if(rs.next()) {
@@ -51,8 +64,8 @@ public class UserJdbcRepository implements UserRepository {
     @Override
     public Optional<User> findByLogin(String login) {
         String sql = "SELECT id, login, password_hash, role FROM users WHERE login LIKE ?";
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
              stmt.setString(1, login);
              ResultSet rs = stmt.executeQuery();
             if(rs.next()) {
@@ -79,8 +92,8 @@ public class UserJdbcRepository implements UserRepository {
             save=true;
         }
         if (save) {
-            try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-                 PreparedStatement stmt = connection.prepareStatement("""
+            Connection connection = DataSourceUtils.getConnection(dataSource);
+            try (PreparedStatement stmt = connection.prepareStatement("""
                          UPDATE users
                          SET
                             login = ?,
@@ -98,8 +111,8 @@ public class UserJdbcRepository implements UserRepository {
             }
         } else {
             String sql = "INSERT INTO users (id, login, password_hash, role) VALUES (?, ?, ?, ?)";
-            try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-                 PreparedStatement stmt = connection.prepareStatement(sql)) {
+            Connection connection = DataSourceUtils.getConnection(dataSource);
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setString(1, toSave.getId());
                 stmt.setString(2, toSave.getLogin());
                 stmt.setString(3, toSave.getPasswordHash());
@@ -115,8 +128,8 @@ public class UserJdbcRepository implements UserRepository {
     @Override
     public void deleteById(String id) {
         String sql = "DELETE FROM users WHERE id = ?";
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, id);
             stmt.executeUpdate();
         } catch (SQLException e) {

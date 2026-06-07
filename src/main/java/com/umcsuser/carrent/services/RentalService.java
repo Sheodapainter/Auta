@@ -6,12 +6,16 @@ import com.umcsuser.carrent.models.Vehicle;
 import com.umcsuser.carrent.repositories.RentalRepository;
 import com.umcsuser.carrent.repositories.UserRepository;
 import com.umcsuser.carrent.repositories.VehicleRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Service
+@Transactional
 public class RentalService implements RentalServiceInterface{
     private final RentalRepository rentalRepository;
     private final UserRepository userRepository;
@@ -24,6 +28,7 @@ public class RentalService implements RentalServiceInterface{
     }
 
     @Override
+    @Transactional
     public Rental rentVehicle(String uid, String vid) {
         boolean userHasActiveRental = rentalRepository.findAll().stream().anyMatch(r -> uid.equals(r.getUserId()) && r.isActive());
         if(userHasActiveRental) {
@@ -51,6 +56,7 @@ public class RentalService implements RentalServiceInterface{
     }
 
     @Override
+    @Transactional
     public Rental returnVehicle(String userId) {
         Rental rental = rentalRepository.findAll().stream()
                 .filter(r -> userId.equals(r.getUserId()))
@@ -64,6 +70,7 @@ public class RentalService implements RentalServiceInterface{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Rental> findActiveRentalByUserId(String userId) {
         return rentalRepository.findAll().stream()
                 .filter(r -> userId.equals(r.getUserId()))
@@ -72,11 +79,13 @@ public class RentalService implements RentalServiceInterface{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Rental> findAllRentals() {
         return rentalRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Rental> findUserRentals(String userId) {
         return rentalRepository.findAll().stream()
                 .filter(r -> userId.equals(r.getUserId()))
@@ -84,11 +93,13 @@ public class RentalService implements RentalServiceInterface{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean userHasActiveRental(String userId) {
         return findActiveRentalByUserId(userId).isPresent();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean vehicleHasActiveRental(String vehicleId) {
         return rentalRepository.findByVehicleIdAndReturnDateIsNull(vehicleId).isPresent();
     }
