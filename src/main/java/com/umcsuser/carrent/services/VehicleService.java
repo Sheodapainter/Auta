@@ -4,10 +4,14 @@ import com.umcsuser.carrent.models.Rental;
 import com.umcsuser.carrent.models.Vehicle;
 import com.umcsuser.carrent.repositories.RentalRepository;
 import com.umcsuser.carrent.repositories.VehicleRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
+@Service
+@Transactional
 public class VehicleService implements VehicleServiceInterface{
 
     private final VehicleValidator vehicleValidator;
@@ -21,35 +25,37 @@ public class VehicleService implements VehicleServiceInterface{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Vehicle> findAllVehicles() {
         return vehicleRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Vehicle> findAvailableVehicles() {
-        List<Rental> rented = rentalRepository.findAll().stream().filter(r -> r.getReturnDateTime().isBlank()).toList();
-        List<Vehicle> vehicles = vehicleRepository.findAll();
-        for(Rental r: rented) {
-            Vehicle v = r.getVehicle();
-            vehicles.remove(v);
-        }
-        return vehicles;
+        return vehicleRepository.findAll().stream()
+                .filter(v -> rentalRepository
+                        .findByVehicleIdAndReturnDateIsNull(v.getId())
+                        .isEmpty())
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Vehicle findById(String id) {
         Optional<Vehicle> v = vehicleRepository.findById(id);
         return v.orElse(null);
     }
 
     @Override
+    @Transactional
     public Vehicle addVehicle(Vehicle vehicle) {
         vehicleValidator.validate(vehicle);
-        vehicleRepository.save(vehicle);
-        return vehicle;
+        return vehicleRepository.save(vehicle);
     }
 
     @Override
+    @Transactional
     public void removeVehicle(String id) {
         if (rentalRepository.findByVehicleIdAndReturnDateIsNull(id).isEmpty()) {
             vehicleRepository.deleteById(id);
@@ -59,6 +65,7 @@ public class VehicleService implements VehicleServiceInterface{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean isVehicleRented(String vehicleId) {
         Optional<Rental> r = rentalRepository.findByVehicleIdAndReturnDateIsNull(vehicleId);
         return r.isPresent();

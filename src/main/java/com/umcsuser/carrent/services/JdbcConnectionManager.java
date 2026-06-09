@@ -1,9 +1,12 @@
 package com.umcsuser.carrent.services;
 
+import org.springframework.stereotype.Component;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+@Component
 public class JdbcConnectionManager {
     private static JdbcConnectionManager instance;
     private final String url;

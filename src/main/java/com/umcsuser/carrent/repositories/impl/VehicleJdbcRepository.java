@@ -4,8 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.umcsuser.carrent.models.Vehicle;
 import com.umcsuser.carrent.repositories.VehicleRepository;
-import com.umcsuser.carrent.services.JdbcConnectionManager;
+import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.stereotype.Repository;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,18 +16,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
+@Repository
+@Profile("jdbc")
 public class VehicleJdbcRepository implements VehicleRepository {
 
     private final Gson gson = new Gson();
     private final Type mapType = new TypeToken<Map<String, Object>>() {}.getType();
+
+    private final DataSource dataSource;
+
+    public VehicleJdbcRepository(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     @Override
     public List<Vehicle> findAll() {
         List<Vehicle> vehicles = new ArrayList<>();
         String sql = "SELECT id, category, brand, model, year, plate, price, attributes FROM vehicle";
 
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
@@ -43,8 +54,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
             return Optional.empty();
         }
         String sql = "SELECT id, category, brand, model, year, plate, price, attributes FROM vehicle WHERE id LIKE ?";
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
              stmt.setString(1, id);
              ResultSet rs = stmt.executeQuery();
             if(rs.next()) {
@@ -71,8 +82,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
             edit=true;
         }
         if(edit) {
-            try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-                 PreparedStatement stmt = connection.prepareStatement("""
+            Connection connection = DataSourceUtils.getConnection(dataSource);
+            try (PreparedStatement stmt = connection.prepareStatement("""
                          UPDATE vehicle
                          SET
                              category = ?,
@@ -97,8 +108,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
             }
         } else {
             String sql = "INSERT INTO vehicle (id, category, brand, model, year, plate, price, attributes) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb)";
-            try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-                 PreparedStatement stmt = connection.prepareStatement(sql)) {
+            Connection connection = DataSourceUtils.getConnection(dataSource);
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setString(1, toSave.getId());
                 stmt.setString(2, toSave.getCategory());
                 stmt.setString(3, toSave.getBrand());
@@ -118,8 +129,8 @@ public class VehicleJdbcRepository implements VehicleRepository {
     @Override
     public void deleteById(String id) {
         String sql = "DELETE FROM vehicle WHERE id = ?";
-        try (Connection connection = JdbcConnectionManager.getInstance().getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql)) {
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, id);
             stmt.executeUpdate();
         } catch (SQLException e) {

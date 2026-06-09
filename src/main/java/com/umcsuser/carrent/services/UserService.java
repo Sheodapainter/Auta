@@ -4,11 +4,15 @@ import com.umcsuser.carrent.models.Rental;
 import com.umcsuser.carrent.models.User;
 import com.umcsuser.carrent.repositories.RentalRepository;
 import com.umcsuser.carrent.repositories.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Service
+@Transactional
 public class UserService implements UserServiceInterface{
     private final UserRepository userRepository;
     private final RentalRepository rentalRepository;
@@ -19,17 +23,20 @@ public class UserService implements UserServiceInterface{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> findAll() {
         return userRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User findById(String id) {
         Optional<User> u = userRepository.findById(id);
         return u.orElse(null);
     }
 
     @Override
+    @Transactional
     public void deleteUser(String id, String loggedUserId) {
         if(id==null) {
             throw new IllegalArgumentException("Id nie może być null!");
