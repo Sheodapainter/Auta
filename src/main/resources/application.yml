@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: ${APP_PROFILE:jpa}
+  main:
+    banner-mode: off
+
+server:
+  port: ${PORT:8080}
+jwt:
+  secret: ${JWT_SECRET:5Sy1-R-Zj7ajgcabswkEttARiS8Q4Vs9IhYCVAt1bQ0}
+  expiration: ${JWT_EXPIRATION:3600000}
+
+carrent:
+  json:
+    users-file: users.json
+    vehicles-file: vehicles.json
+    rentals-file: rentals.json
+    categories-file: categories.json
