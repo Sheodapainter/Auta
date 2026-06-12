@@ -1,5 +1,6 @@
 package com.umcsuser.carrent.security;
 
+import com.umcsuser.carrent.models.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
