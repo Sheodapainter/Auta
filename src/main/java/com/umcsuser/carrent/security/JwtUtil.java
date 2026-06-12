@@ -59,4 +59,12 @@ public class JwtUtil {
         byte[] keyBytes = Decoders.BASE64URL.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+    private Object getUserRole(UserDetails userDetails) {
+        GrantedAuthority authority = userDetails.getAuthorities().stream().findFirst().orElse(null);
+        if (authority.getAuthority().equals("ROLE_ADMIN")) {
+            return Role.ADMIN;
+        } else {
+            return Role.USER;
+        }
+    }
 }
